@@ -60,23 +60,49 @@ humidity-to-location map:
     }
   }
 
-  val seedToLocation = seeds.map { seed ->
-    var lookup = seed
-    val path = Map.values().map { map ->
-      val range = maps[map]!!.keys.filter { it.contains(lookup) }.firstOrNull()
+  val seedToLocation = seeds.associateWith { seed ->
+    getLocation(seed, maps)
+  }.toMutableMap()
 
-      lookup = if(range != null) {
-        val idx = range.indexOf(lookup)
-        lookup = maps[map]!![range]!!.first + idx
-        lookup
-      } else { lookup }
+  val part1 = seedToLocation.values.min()
+  println(part1)
+//  assert(part1 == 910845529L)
+
+  val seeds2 = seeds.chunked(2).map { (start, range) ->
+    LongRange(start, start+range)
+  }
+
+  seedToLocation.clear()
+
+  seeds2.forEach { seedRange ->
+    seedRange.forEach {
+      if (!seedToLocation.contains(it)) {
+        seedToLocation[it] = getLocation(it, maps)
+      }
+    }
+  }
+  val part2 = seedToLocation.values.min()
+  println(part2)
+}
+
+private fun getLocation(
+  seed: Long,
+  maps: kotlin.collections.Map<Map, MutableMap<LongRange, LongRange>>
+): Long {
+  var lookup = seed
+  Map.values().map { map ->
+    val range = maps[map]!!.keys.firstOrNull { it.contains(lookup) }
+
+    lookup = if (range != null) {
+      val idx = range.indexOf(lookup)
+      lookup = maps[map]!![range]!!.first + idx
+      lookup
+    } else {
       lookup
     }
-    seed to path
-  }.toMap()
-
-  val part1 = seedToLocation.values.minBy { it.last() }.last()
-  println(part1)
+    lookup
+  }
+  return lookup
 }
 
 enum class Map(val index: Int) {
