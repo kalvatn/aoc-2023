@@ -40,8 +40,8 @@ humidity-to-location map:
 56 93 4
   """.trimIndent()
 
-  val chunks = testInput.split("\n\n")
-//  val chunks = input.split("\n\n")
+//  val chunks = testInput.split("\n\n")
+  val chunks = input.split("\n\n")
 
   val seeds =
     chunks.first().split(":").last().split(" ").filterNot { it.isBlank() }.map { it.toLong() }
@@ -50,22 +50,26 @@ humidity-to-location map:
       .map { mapping -> mapping.split(" ").filterNot { it.isBlank() }.map { it.toLong() } }
   }.toList()
 
-  val maps = Map.values().associateWith { mutableMapOf<Long, Long>() }
+  val maps = Map.values().associateWith { mutableMapOf<LongRange, LongRange>() }
 
   mappings.mapIndexed { index, ranges ->
     println("$index $ranges")
     ranges.forEach {
       val (source, dest, range) = it
-      maps[Map.fromIndex(index)]!!.putAll((0L until range).map { n ->
-        dest + n to source + n
-      })
+      maps[Map.fromIndex(index)]!![LongRange(dest, dest + range)] = LongRange(source, source + range)
     }
   }
 
   val seedToLocation = seeds.map { seed ->
     var lookup = seed
     val path = Map.values().map { map ->
-      lookup = maps[map]!!.getOrDefault(lookup, lookup)
+      val range = maps[map]!!.keys.filter { it.contains(lookup) }.firstOrNull()
+
+      lookup = if(range != null) {
+        val idx = range.indexOf(lookup)
+        lookup = maps[map]!![range]!!.first + idx
+        lookup
+      } else { lookup }
       lookup
     }
     seed to path
